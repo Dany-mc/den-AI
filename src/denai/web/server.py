@@ -17,11 +17,12 @@ from fastapi.responses import FileResponse, HTMLResponse
 from denai import auth
 from denai import __version__
 from denai.agent import DEFAULT_MODEL, fix_document, roast_document
+from denai.card_png import write_card_png
 from denai.extract import extract_document
-from denai.rebuild import rebuild_document
+from denai.rebuild import fixed_suffix, rebuild_document
 
 STATIC_DIR = Path(__file__).parent / "static"
-_ALLOWED_SUFFIXES = {".pptx", ".docx"}
+_ALLOWED_SUFFIXES = {".pptx", ".docx", ".pdf", ".md"}
 
 
 def create_app(model: str = DEFAULT_MODEL) -> FastAPI:
@@ -69,7 +70,7 @@ def create_app(model: str = DEFAULT_MODEL) -> FastAPI:
         name = file.filename or "document"
         suffix = Path(name).suffix.lower()
         if suffix not in _ALLOWED_SUFFIXES:
-            raise HTTPException(400, "den-AI only judges .pptx and .docx files.")
+            raise HTTPException(400, "den-AI only judges .pptx, .docx, .pdf and .md files.")
         if language not in (None, "it", "en", "es"):
             raise HTTPException(400, "Supported languages: it, en, es.")
 
@@ -100,7 +101,7 @@ def create_app(model: str = DEFAULT_MODEL) -> FastAPI:
 
         try:
             spec = fix_document(job["extraction"], job["roast"], model=model)
-            suffix = Path(job["name"]).suffix.lower()
+            suffix = fixed_suffix(Path(job["name"]).suffix.lower())
             fixed = workdir / f"{job_id}-fixed{suffix}"
             rebuild_document(spec, job["extraction"], fixed)
         except Exception as exc:
@@ -119,11 +120,25 @@ def create_app(model: str = DEFAULT_MODEL) -> FastAPI:
         if job is None or "fixed" not in job:
             raise HTTPException(404, "Nothing to download — fix the file first.")
         stem = Path(job["name"]).stem
-        suffix = Path(job["name"]).suffix.lower()
+        suffix = fixed_suffix(Path(job["name"]).suffix.lower())
         return FileResponse(
             job["fixed"],
             filename=f"{stem}.denai-fixed{suffix}",
             media_type="application/octet-stream",
+        )
+
+    @app.get("/api/card/{job_id}.png")
+    def card_png(job_id: str) -> FileResponse:
+        job = jobs.get(job_id)
+        if job is None:
+            raise HTTPException(404, "Unknown job — roast the file first.")
+        png = workdir / f"{job_id}-card.png"
+        if not png.exists():
+            write_card_png(job["roast"], job["name"], png)
+        return FileResponse(
+            png,
+            filename=f"{Path(job['name']).stem}.denai.png",
+            media_type="image/png",
         )
 
     return app

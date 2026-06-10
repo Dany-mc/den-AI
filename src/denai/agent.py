@@ -59,9 +59,17 @@ Output STRICTLY a single JSON object, no markdown fences, no prose around it:
 }
 """
 
-FIX_SYSTEM = """\
+_CHART_SCHEMA = """\
+A chart object is:
+  {"type": "bar" | "line" | "pie", "title": "...", "labels": ["..."], "values": [<numbers>]}
+Include a chart ONLY when the source content contains real numbers worth
+visualizing. NEVER invent data. Labels and values must have the same length.
+"""
+
+FIX_SYSTEM = (
+    """\
 You are den-AI, an opinionated document surgeon. You receive the extracted
-content of a PPTX or DOCX plus a roast report listing its flaws. Rebuild the
+content of a document plus a roast report listing its flaws. Rebuild the
 document: cut filler, merge redundant units, sharpen titles into takeaways,
 turn walls of text into tight bullets, keep all factual content.
 
@@ -78,12 +86,13 @@ For kind "pptx":
       "layout": "title" | "section" | "content",
       "title": "<assertive takeaway title>",
       "bullets": ["<max 5 bullets, max 12 words each>"],
+      "chart": <optional chart object>,
       "notes": "<speaker notes: what to actually say>"
     }
   ]
 }
 
-For kind "docx":
+For kind "docx" (ALSO the output for pdf and md inputs — they rebuild as docx):
 {
   "kind": "docx",
   "use_original_brand": <true if brand_verdict.keep was true>,
@@ -91,10 +100,38 @@ For kind "docx":
   "blocks": [
     {"type": "heading", "level": <1-3>, "text": "..."},
     {"type": "paragraph", "text": "..."},
-    {"type": "bullets", "items": ["...", "..."]}
+    {"type": "bullets", "items": ["...", "..."]},
+    {"type": "chart", "chart": <chart object>}
   ]
 }
+
 """
+    + _CHART_SCHEMA
+)
+
+REPORT_SYSTEM = (
+    """\
+You are den-AI, an opinionated report builder. You receive raw tabular data
+(CSV headers + rows). Build a den-approved report from it: lead with the
+headline number, surface 3-6 real insights (trends, outliers, comparisons),
+use charts for anything a table would bury, tight bullets everywhere, zero
+filler, no vanity metrics.
+
+Language rule: write in the language of the data's headers/labels; if
+ambiguous, English. An explicit user override wins.
+
+Output STRICTLY a single JSON object, no markdown fences, no prose around it,
+using the exact "pptx" or "docx" schema you are told to target:
+
+pptx: {"kind": "pptx", "use_original_brand": false, "slides": [{"layout": ...,
+"title": ..., "bullets": [...], "chart": <optional>, "notes": ...}]}
+docx: {"kind": "docx", "use_original_brand": false, "title": ...,
+"blocks": [heading/paragraph/bullets/chart blocks]}
+
+"""
+    + _CHART_SCHEMA
+    + "Charts here come from the provided data only — aggregate honestly."
+)
 
 
 async def _run(prompt: str, system_prompt: str, model: str) -> str:
@@ -188,3 +225,17 @@ def fix_document(
         + json.dumps(roast, ensure_ascii=False, indent=2)
     )
     return parse_json_response(run_agent(prompt, FIX_SYSTEM, model))
+
+
+def build_report(
+    data: dict[str, Any],
+    kind: str,
+    model: str = DEFAULT_MODEL,
+    language: str | None = None,
+) -> dict[str, Any]:
+    prompt = (
+        f'Build a den-approved report. Target the "{kind}" schema.\n\nData:\n'
+        + json.dumps(data, ensure_ascii=False, indent=2)
+        + _lang_clause(language)
+    )
+    return parse_json_response(run_agent(prompt, REPORT_SYSTEM, model))

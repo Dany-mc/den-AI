@@ -183,6 +183,7 @@
     appearance: none; border: none; cursor: pointer; font-family: inherit;
     font-size: 17px; font-weight: 500; border-radius: 999px; padding: 14px 32px;
     transition: transform .2s cubic-bezier(.2,.8,.2,1), opacity .2s;
+    display: inline-block; text-decoration: none;
   }
   .btn:hover { transform: scale(1.03); }
   .btn:active { transform: scale(0.98); }
@@ -269,7 +270,7 @@
       <div class="dz-icon">📄</div>
       <div class="dz-title" id="dz-title">Drop a .pptx or .docx here</div>
       <div class="dz-sub" id="dz-sub">or click to choose a file — judged locally, roasted by Claude</div>
-      <input type="file" id="file-input" accept=".pptx,.docx">
+      <input type="file" id="file-input" accept=".pptx,.docx,.pdf,.md">
     </div>
   </section>
 
@@ -316,6 +317,7 @@
 
     <div class="actions reveal" style="animation-delay:.3s">
       <button class="btn btn-primary" id="fix-btn">Fix it for me</button>
+      <a class="btn btn-ghost" id="card-btn" href="#" download>Scorecard PNG</a>
       <button class="btn btn-ghost" id="reset-btn">Roast another</button>
       <div class="fix-note" id="fix-note"></div>
     </div>
@@ -353,7 +355,7 @@
     en: {
       heroTitle: "Your deck.<br><em>Judged.</em>",
       heroSub: "Drop a presentation or a report. Get the verdict. Get it fixed.",
-      dzTitle: "Drop a .pptx or .docx here",
+      dzTitle: "Drop a .pptx, .docx, .pdf or .md here",
       dzSub: "or click to choose a file — judged locally, roasted by Claude",
       quips: ["Reading every slide…", "Judging your font choices…", "Counting vanity metrics…", "Inspecting the brand. Hmm.", "Sharpening the knives…", "Drafting the verdict…"],
       scoreLabel: "den score",
@@ -364,6 +366,7 @@
       slides: "slides",
       sections: "sections",
       fixBtn: "Fix it for me",
+      cardBtn: "Scorecard PNG",
       rebuilding: "Rebuilding…",
       download: "Download the fixed file",
       another: "Roast another",
@@ -386,7 +389,7 @@
     it: {
       heroTitle: "Il tuo deck.<br><em>Giudicato.</em>",
       heroSub: "Trascina una presentazione o un report. Ricevi il verdetto. E la versione corretta.",
-      dzTitle: "Trascina qui un .pptx o un .docx",
+      dzTitle: "Trascina qui un .pptx, .docx, .pdf o .md",
       dzSub: "oppure clicca per scegliere un file — letto in locale, roastato da Claude",
       quips: ["Leggo ogni slide…", "Giudico le tue scelte di font…", "Conto le vanity metric…", "Ispeziono il brand. Mmh.", "Affilo i coltelli…", "Scrivo il verdetto…"],
       scoreLabel: "den score",
@@ -397,6 +400,7 @@
       slides: "slide",
       sections: "sezioni",
       fixBtn: "Rifallo per me",
+      cardBtn: "Pagella PNG",
       rebuilding: "Ricostruzione…",
       download: "Scarica il file sistemato",
       another: "Roastane un altro",
@@ -419,7 +423,7 @@
     es: {
       heroTitle: "Tu deck.<br><em>Juzgado.</em>",
       heroSub: "Arrastra una presentación o un informe. Recibe el veredicto. Y la versión corregida.",
-      dzTitle: "Suelta aquí un .pptx o un .docx",
+      dzTitle: "Suelta aquí un .pptx, .docx, .pdf o .md",
       dzSub: "o haz clic para elegir un archivo — leído en local, asado por Claude",
       quips: ["Leyendo cada diapositiva…", "Juzgando tus fuentes…", "Contando métricas de vanidad…", "Inspeccionando la marca. Mmm.", "Afilando los cuchillos…", "Redactando el veredicto…"],
       scoreLabel: "den score",
@@ -430,6 +434,7 @@
       slides: "diapositivas",
       sections: "secciones",
       fixBtn: "Arréglalo por mí",
+      cardBtn: "Tarjeta PNG",
       rebuilding: "Reconstruyendo…",
       download: "Descarga el archivo arreglado",
       another: "Roastea otro",
@@ -467,6 +472,7 @@
     $("sins-title").textContent = t("sinsTitle");
     $("summary-title").textContent = t("summaryTitle");
     $("reset-btn").textContent = t("another");
+    $("card-btn").textContent = t("cardBtn");
     $("auth-title").textContent = t("authTitle");
     $("auth-sub").textContent = t("authSub");
     $("auth-sub-title").textContent = t("authSubTitle");
@@ -582,6 +588,7 @@
       </div>`).join("");
 
     $("summary").textContent = roast.summary || "";
+    $("card-btn").href = "/api/card/" + data.job_id + ".png";
     $("fix-btn").disabled = false;
     $("fix-btn").textContent = t("fixBtn");
     $("fix-btn").onclick = fixIt;
