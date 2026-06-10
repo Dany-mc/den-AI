@@ -143,10 +143,29 @@ def parse_json_response(text: str) -> dict[str, Any]:
     return json.loads(text)
 
 
-def roast_document(extraction: dict[str, Any], model: str = DEFAULT_MODEL) -> dict[str, Any]:
+_LANG_NAMES = {"it": "Italian", "en": "English", "es": "Spanish"}
+
+
+def _lang_clause(language: str | None) -> str:
+    name = _LANG_NAMES.get(language or "")
+    if not name:
+        return ""
+    return (
+        f"\n\nLanguage override: the user explicitly asked for {name}. "
+        f"Write ALL roast text in {name}, regardless of the document language, "
+        f'and set "language" accordingly.'
+    )
+
+
+def roast_document(
+    extraction: dict[str, Any],
+    model: str = DEFAULT_MODEL,
+    language: str | None = None,
+) -> dict[str, Any]:
     prompt = (
         "Roast this document. Extracted structure and brand signals follow as JSON:\n\n"
         + json.dumps(extraction, ensure_ascii=False, indent=2)
+        + _lang_clause(language)
     )
     return parse_json_response(run_agent(prompt, ROAST_SYSTEM, model))
 

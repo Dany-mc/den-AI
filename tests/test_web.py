@@ -43,7 +43,9 @@ def sample_pptx(tmp_path: Path) -> Path:
 
 @pytest.fixture()
 def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
-    monkeypatch.setattr(server, "roast_document", lambda extraction, model: MOCK_ROAST)
+    monkeypatch.setattr(
+        server, "roast_document", lambda extraction, model, language=None: MOCK_ROAST
+    )
     monkeypatch.setattr(server, "fix_document", lambda extraction, roast, model: MOCK_SPEC)
     return TestClient(create_app())
 
@@ -56,7 +58,9 @@ def test_index_serves_ui(client: TestClient) -> None:
 
 def test_roast_fix_download_flow(client: TestClient, sample_pptx: Path) -> None:
     with sample_pptx.open("rb") as fh:
-        res = client.post("/api/roast", files={"file": ("deck.pptx", fh)})
+        res = client.post(
+            "/api/roast", files={"file": ("deck.pptx", fh)}, data={"language": "it"}
+        )
     assert res.status_code == 200
     data = res.json()
     assert data["roast"]["den_score"] == 3.8
@@ -73,6 +77,14 @@ def test_roast_fix_download_flow(client: TestClient, sample_pptx: Path) -> None:
 
 def test_rejects_unknown_extension(client: TestClient) -> None:
     res = client.post("/api/roast", files={"file": ("notes.txt", b"hello")})
+    assert res.status_code == 400
+
+
+def test_rejects_unknown_language(client: TestClient, sample_pptx: Path) -> None:
+    with sample_pptx.open("rb") as fh:
+        res = client.post(
+            "/api/roast", files={"file": ("deck.pptx", fh)}, data={"language": "fr"}
+        )
     assert res.status_code == 400
 
 

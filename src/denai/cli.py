@@ -37,7 +37,13 @@ def main() -> None:
 @click.argument("file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option("--model", default=DEFAULT_MODEL, show_default=True, help="Claude model to use.")
 @click.option("--no-card", is_flag=True, help="Skip the shareable HTML scorecard.")
-def roast(file: Path, model: str, no_card: bool) -> None:
+@click.option(
+    "--lang",
+    type=click.Choice(["it", "en", "es"]),
+    default=None,
+    help="Roast language (default: the document's own language).",
+)
+def roast(file: Path, model: str, no_card: bool, lang: str | None) -> None:
     """Critique FILE (.pptx or .docx) without mercy."""
     extraction = _load_document(file)
     console.print(
@@ -46,7 +52,7 @@ def roast(file: Path, model: str, no_card: bool) -> None:
         "preparing the verdict.[/dim]"
     )
 
-    result = roast_document(extraction, model=model)
+    result = roast_document(extraction, model=model, language=lang)
     render_terminal(result, console)
 
     json_path = file.with_suffix(".denai.json")

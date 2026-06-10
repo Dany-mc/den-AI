@@ -59,6 +59,19 @@
   .header-meta { font-size: 12px; color: var(--text-2); display: flex; gap: 16px; align-items: center; }
   .header-meta a { color: var(--text-2); text-decoration: none; }
   .header-meta a:hover { color: var(--accent); }
+  .lang-switch {
+    display: inline-flex; background: var(--surface-2); border-radius: 999px; padding: 2px;
+    border: 1px solid var(--hairline);
+  }
+  .lang-switch button {
+    appearance: none; border: none; background: transparent; cursor: pointer;
+    font-family: inherit; font-size: 12px; font-weight: 600; color: var(--text-2);
+    padding: 4px 11px; border-radius: 999px; transition: all .25s cubic-bezier(.2,.8,.2,1);
+  }
+  .lang-switch button.active {
+    background: var(--surface); color: var(--text);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  }
 
   main { max-width: 980px; margin: 0 auto; padding: 0 22px 96px; }
 
@@ -197,6 +210,11 @@
   <div class="header-inner">
     <div class="wordmark">den<span>·</span>AI <span style="color:var(--text-2); font-weight:400;">studio</span></div>
     <div class="header-meta">
+      <div class="lang-switch" id="lang-switch">
+        <button data-lang="it">IT</button>
+        <button data-lang="en">EN</button>
+        <button data-lang="es">ES</button>
+      </div>
       <span id="model-badge"></span>
       <a href="https://github.com/Dany-mc/den-AI" target="_blank" rel="noopener">GitHub ↗</a>
     </div>
@@ -206,12 +224,12 @@
 <main>
   <!-- upload state -->
   <section id="view-upload" class="hero">
-    <h1>Your deck.<br><em>Judged.</em></h1>
-    <p>Drop a presentation or a report. Get the verdict. Get it fixed.</p>
+    <h1 id="hero-title">Your deck.<br><em>Judged.</em></h1>
+    <p id="hero-sub">Drop a presentation or a report. Get the verdict. Get it fixed.</p>
     <div class="dropzone" id="dropzone">
       <div class="dz-icon">📄</div>
-      <div class="dz-title">Drop a .pptx or .docx here</div>
-      <div class="dz-sub">or click to choose a file — judged locally, roasted by Claude</div>
+      <div class="dz-title" id="dz-title">Drop a .pptx or .docx here</div>
+      <div class="dz-sub" id="dz-sub">or click to choose a file — judged locally, roasted by Claude</div>
       <input type="file" id="file-input" accept=".pptx,.docx">
     </div>
   </section>
@@ -232,7 +250,7 @@
           <circle class="arc" id="arc" cx="84" cy="84" r="74" fill="none" stroke-width="11"
                   stroke-dasharray="465" stroke-dashoffset="465"/>
         </svg>
-        <div class="num"><b id="score">–</b><span>den score</span></div>
+        <div class="num"><b id="score">–</b><span id="score-label">den score</span></div>
       </div>
       <div class="verdict-text">
         <div class="doc" id="doc-name"></div>
@@ -243,7 +261,7 @@
 
     <div class="grid">
       <div class="panel reveal" style="animation-delay:.08s">
-        <h2>Top sins</h2>
+        <h2 id="sins-title">Top sins</h2>
         <ul class="sins" id="sins"></ul>
       </div>
       <div class="panel reveal" style="animation-delay:.16s">
@@ -253,7 +271,7 @@
     </div>
 
     <div class="panel summary-panel reveal" style="animation-delay:.24s">
-      <h2>The verdict</h2>
+      <h2 id="summary-title">The verdict</h2>
       <p id="summary"></p>
     </div>
 
@@ -269,15 +287,111 @@
 
 <script>
   const $ = (id) => document.getElementById(id);
-  const QUIPS = [
-    "Reading every slide…",
-    "Judging your font choices…",
-    "Counting vanity metrics…",
-    "Inspecting the brand. Hmm.",
-    "Sharpening the knives…",
-    "Drafting the verdict…",
-  ];
-  let state = { jobId: null, quipTimer: null };
+
+  const I18N = {
+    en: {
+      heroTitle: "Your deck.<br><em>Judged.</em>",
+      heroSub: "Drop a presentation or a report. Get the verdict. Get it fixed.",
+      dzTitle: "Drop a .pptx or .docx here",
+      dzSub: "or click to choose a file — judged locally, roasted by Claude",
+      quips: ["Reading every slide…", "Judging your font choices…", "Counting vanity metrics…", "Inspecting the brand. Hmm.", "Sharpening the knives…", "Drafting the verdict…"],
+      scoreLabel: "den score",
+      sinsTitle: "Top sins",
+      bySlide: "Slide by slide",
+      bySection: "Section by section",
+      summaryTitle: "The verdict",
+      slides: "slides",
+      sections: "sections",
+      fixBtn: "Fix it for me",
+      rebuilding: "Rebuilding…",
+      download: "Download the fixed file",
+      another: "Roast another",
+      fixProgress: "den-AI is doing it the way it should have been done.",
+      noteKeep: "Rebuilt in your brand — it earned the right to stay.",
+      noteDen: "Rebuilt in den style — your brand didn't make the cut.",
+      fixLabel: "Fix:",
+    },
+    it: {
+      heroTitle: "Il tuo deck.<br><em>Giudicato.</em>",
+      heroSub: "Trascina una presentazione o un report. Ricevi il verdetto. E la versione corretta.",
+      dzTitle: "Trascina qui un .pptx o un .docx",
+      dzSub: "oppure clicca per scegliere un file — letto in locale, roastato da Claude",
+      quips: ["Leggo ogni slide…", "Giudico le tue scelte di font…", "Conto le vanity metric…", "Ispeziono il brand. Mmh.", "Affilo i coltelli…", "Scrivo il verdetto…"],
+      scoreLabel: "den score",
+      sinsTitle: "Peccati capitali",
+      bySlide: "Slide per slide",
+      bySection: "Sezione per sezione",
+      summaryTitle: "Il verdetto",
+      slides: "slide",
+      sections: "sezioni",
+      fixBtn: "Rifallo per me",
+      rebuilding: "Ricostruzione…",
+      download: "Scarica il file sistemato",
+      another: "Roastane un altro",
+      fixProgress: "den-AI lo sta rifacendo come andava fatto.",
+      noteKeep: "Ricostruito nel tuo brand — si è guadagnato il diritto di restare.",
+      noteDen: "Ricostruito in den style — il tuo brand non ha superato il provino.",
+      fixLabel: "Fix:",
+    },
+    es: {
+      heroTitle: "Tu deck.<br><em>Juzgado.</em>",
+      heroSub: "Arrastra una presentación o un informe. Recibe el veredicto. Y la versión corregida.",
+      dzTitle: "Suelta aquí un .pptx o un .docx",
+      dzSub: "o haz clic para elegir un archivo — leído en local, asado por Claude",
+      quips: ["Leyendo cada diapositiva…", "Juzgando tus fuentes…", "Contando métricas de vanidad…", "Inspeccionando la marca. Mmm.", "Afilando los cuchillos…", "Redactando el veredicto…"],
+      scoreLabel: "den score",
+      sinsTitle: "Pecados capitales",
+      bySlide: "Diapositiva a diapositiva",
+      bySection: "Sección por sección",
+      summaryTitle: "El veredicto",
+      slides: "diapositivas",
+      sections: "secciones",
+      fixBtn: "Arréglalo por mí",
+      rebuilding: "Reconstruyendo…",
+      download: "Descarga el archivo arreglado",
+      another: "Roastea otro",
+      fixProgress: "den-AI lo está rehaciendo como debía hacerse.",
+      noteKeep: "Reconstruido con tu marca — se ganó el derecho a quedarse.",
+      noteDen: "Reconstruido en den style — tu marca no pasó el corte.",
+      fixLabel: "Fix:",
+    },
+  };
+
+  let state = { jobId: null, quipTimer: null, kind: null, fixed: false };
+  let lang = localStorage.getItem("denai-lang") || (navigator.language || "en").slice(0, 2);
+  if (!I18N[lang]) lang = "en";
+
+  const t = (key) => I18N[lang][key];
+
+  function applyI18n() {
+    document.documentElement.lang = lang;
+    $("hero-title").innerHTML = t("heroTitle");
+    $("hero-sub").textContent = t("heroSub");
+    $("dz-title").textContent = t("dzTitle");
+    $("dz-sub").textContent = t("dzSub");
+    $("score-label").textContent = t("scoreLabel");
+    $("sins-title").textContent = t("sinsTitle");
+    $("summary-title").textContent = t("summaryTitle");
+    $("reset-btn").textContent = t("another");
+    if (state.kind) {
+      $("sections-title").textContent = state.kind === "pptx" ? t("bySlide") : t("bySection");
+    }
+    if (!state.fixed) {
+      $("fix-btn").textContent = t("fixBtn");
+    }
+    document.querySelectorAll("#lang-switch button").forEach((b) =>
+      b.classList.toggle("active", b.dataset.lang === lang));
+  }
+
+  function setLang(l) {
+    lang = l;
+    localStorage.setItem("denai-lang", l);
+    applyI18n();
+  }
+
+  document.querySelectorAll("#lang-switch button").forEach((b) =>
+    b.addEventListener("click", () => setLang(b.dataset.lang)));
+  applyI18n();
 
   fetch("/api/info").then(r => r.json()).then(d => {
     $("model-badge").textContent = d.model;
@@ -301,14 +415,15 @@
     return s >= 7 ? "var(--green)" : s >= 5 ? "var(--amber)" : "var(--red)";
   }
 
-  function startQuips(fileName, verb) {
+  function startQuips(fileName) {
     $("loading-file").textContent = fileName;
+    const quips = t("quips");
     let i = 0;
-    $("quip").textContent = verb || QUIPS[0];
+    $("quip").textContent = quips[0];
     state.quipTimer = setInterval(() => {
-      i = (i + 1) % QUIPS.length;
+      i = (i + 1) % quips.length;
       $("quip").style.opacity = 0;
-      setTimeout(() => { $("quip").textContent = QUIPS[i]; $("quip").style.opacity = 1; }, 350);
+      setTimeout(() => { $("quip").textContent = quips[i]; $("quip").style.opacity = 1; }, 350);
     }, 2600);
   }
   function stopQuips() { clearInterval(state.quipTimer); }
@@ -318,6 +433,7 @@
     startQuips(file.name);
     const fd = new FormData();
     fd.append("file", file);
+    fd.append("language", lang);
     try {
       const res = await fetch("/api/roast", { method: "POST", body: fd });
       const data = await res.json();
@@ -337,7 +453,9 @@
     const score = Number(roast.den_score || 0);
     const color = scoreColor(score);
 
-    $("doc-name").textContent = data.name + " · " + data.n_units + (data.kind === "pptx" ? " slides" : " sections");
+    state.kind = data.kind;
+    state.fixed = false;
+    $("doc-name").textContent = data.name + " · " + data.n_units + " " + (data.kind === "pptx" ? t("slides") : t("sections"));
     $("one-liner").textContent = "“" + (roast.one_liner || "") + "”";
     $("score").textContent = score.toFixed(1);
     $("score").style.color = color;
@@ -349,7 +467,7 @@
     $("sins").innerHTML = (roast.top_sins || [])
       .map(s => `<li><span class="x">✗</span><span>${esc(s)}</span></li>`).join("");
 
-    $("sections-title").textContent = data.kind === "pptx" ? "Slide by slide" : "Section by section";
+    $("sections-title").textContent = data.kind === "pptx" ? t("bySlide") : t("bySection");
     $("sections").innerHTML = (roast.sections || []).map(s => `
       <div class="section-row">
         <div class="section-head">
@@ -357,12 +475,12 @@
           <span class="t">${esc(String(s.index))}. ${esc(s.title || "")}</span>
         </div>
         <div class="roast">${esc(s.roast || "")}</div>
-        <div class="fix"><b>Fix:</b> ${esc(s.fix || "")}</div>
+        <div class="fix"><b>${esc(t("fixLabel"))}</b> ${esc(s.fix || "")}</div>
       </div>`).join("");
 
     $("summary").textContent = roast.summary || "";
     $("fix-btn").disabled = false;
-    $("fix-btn").textContent = "Fix it for me";
+    $("fix-btn").textContent = t("fixBtn");
     $("fix-btn").onclick = fixIt;
     $("fix-note").textContent = "";
 
@@ -377,21 +495,20 @@
   async function fixIt() {
     const btn = $("fix-btn");
     btn.disabled = true;
-    btn.textContent = "Rebuilding…";
-    $("fix-note").textContent = "den-AI is doing it the way it should have been done.";
+    btn.textContent = t("rebuilding");
+    $("fix-note").textContent = t("fixProgress");
     try {
       const res = await fetch("/api/fix/" + state.jobId, { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Rebuild failed.");
-      btn.textContent = "Download the fixed file";
+      state.fixed = true;
+      btn.textContent = t("download");
       btn.disabled = false;
       btn.onclick = () => { window.location.href = data.download; };
-      $("fix-note").textContent = data.use_original_brand
-        ? "Rebuilt in your brand — it earned the right to stay."
-        : "Rebuilt in den style — your brand didn't make the cut.";
+      $("fix-note").textContent = data.use_original_brand ? t("noteKeep") : t("noteDen");
     } catch (err) {
       btn.disabled = false;
-      btn.textContent = "Fix it for me";
+      btn.textContent = t("fixBtn");
       $("fix-note").textContent = "";
       toast("✗ " + err.message);
     }
@@ -419,6 +536,8 @@
   $("fix-btn").onclick = fixIt;
   $("reset-btn").addEventListener("click", () => {
     state.jobId = null;
+    state.kind = null;
+    state.fixed = false;
     $("file-input").value = "";
     $("arc").style.strokeDashoffset = "465";
     show("upload");

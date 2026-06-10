@@ -11,7 +11,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 
 from denai import __version__
@@ -37,11 +37,15 @@ def create_app(model: str = DEFAULT_MODEL) -> FastAPI:
         return {"version": __version__, "model": model}
 
     @app.post("/api/roast")
-    def roast(file: UploadFile = File(...)) -> dict[str, Any]:
+    def roast(
+        file: UploadFile = File(...), language: str | None = Form(None)
+    ) -> dict[str, Any]:
         name = file.filename or "document"
         suffix = Path(name).suffix.lower()
         if suffix not in _ALLOWED_SUFFIXES:
             raise HTTPException(400, "den-AI only judges .pptx and .docx files.")
+        if language not in (None, "it", "en", "es"):
+            raise HTTPException(400, "Supported languages: it, en, es.")
 
         job_id = uuid.uuid4().hex[:12]
         src = workdir / f"{job_id}{suffix}"
@@ -49,7 +53,7 @@ def create_app(model: str = DEFAULT_MODEL) -> FastAPI:
 
         try:
             extraction = extract_document(src)
-            roast_result = roast_document(extraction, model=model)
+            roast_result = roast_document(extraction, model=model, language=language)
         except Exception as exc:  # surfaced to the UI as-is
             raise HTTPException(502, f"{exc}") from exc
 
