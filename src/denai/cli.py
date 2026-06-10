@@ -62,6 +62,26 @@ def roast(file: Path, model: str, no_card: bool) -> None:
 
 
 @main.command()
+@click.option("--port", default=8765, show_default=True, help="Port for den-AI studio.")
+@click.option("--model", default=DEFAULT_MODEL, show_default=True, help="Claude model to use.")
+@click.option("--no-browser", is_flag=True, help="Don't open the browser automatically.")
+def web(port: int, model: str, no_browser: bool) -> None:
+    """Open den-AI studio: the web UI, on localhost."""
+    import threading
+    import webbrowser
+
+    import uvicorn
+
+    from denai.web.server import create_app
+
+    url = f"http://127.0.0.1:{port}"
+    console.print(f"\n[bold]den-AI studio[/bold] → [link={url}]{url}[/link]  [dim](Ctrl+C to stop)[/dim]\n")
+    if not no_browser:
+        threading.Timer(0.8, lambda: webbrowser.open(url)).start()
+    uvicorn.run(create_app(model=model), host="127.0.0.1", port=port, log_level="warning")
+
+
+@main.command()
 @click.argument("file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option("--model", default=DEFAULT_MODEL, show_default=True, help="Claude model to use.")
 def fix(file: Path, model: str) -> None:

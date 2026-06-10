@@ -16,6 +16,7 @@ uv.lock
 .mypy_cache/
 
 # OS / editor
+.claude/
 .DS_Store
 .idea/
 .vscode/

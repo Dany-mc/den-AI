@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>den-AI studio</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #fbfbfd;
+    --surface: #ffffff;
+    --surface-2: #f5f5f7;
+    --text: #1d1d1f;
+    --text-2: #6e6e73;
+    --hairline: rgba(0, 0, 0, 0.08);
+    --accent: #0071e3;
+    --red: #ff453a;
+    --amber: #ff9f0a;
+    --green: #30d158;
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --surface: #1c1c1e;
+      --surface-2: #2c2c2e;
+      --text: #f5f5f7;
+      --text-2: #98989d;
+      --hairline: rgba(255, 255, 255, 0.12);
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.7);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Inter, sans-serif;
+    background: var(--bg); color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* ---------- header ---------- */
+  header {
+    position: sticky; top: 0; z-index: 10;
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    background: color-mix(in srgb, var(--bg) 75%, transparent);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .header-inner {
+    max-width: 980px; margin: 0 auto; padding: 0 22px;
+    height: 48px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .wordmark { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+  .wordmark span { color: var(--red); }
+  .header-meta { font-size: 12px; color: var(--text-2); display: flex; gap: 16px; align-items: center; }
+  .header-meta a { color: var(--text-2); text-decoration: none; }
+  .header-meta a:hover { color: var(--accent); }
+
+  main { max-width: 980px; margin: 0 auto; padding: 0 22px 96px; }
+
+  /* ---------- hero / upload ---------- */
+  .hero { text-align: center; padding: 84px 0 40px; }
+  .hero h1 {
+    font-size: clamp(40px, 7vw, 64px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05;
+  }
+  .hero h1 em {
+    font-style: normal;
+    background: linear-gradient(90deg, #ff453a, #ff9f0a);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p { font-size: 21px; color: var(--text-2); margin-top: 14px; font-weight: 400; }
+
+  .dropzone {
+    margin: 28px auto 0; max-width: 560px;
+    background: var(--surface); border: 1.5px dashed var(--hairline);
+    border-radius: 24px; padding: 56px 32px; cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: transform .25s cubic-bezier(.2,.8,.2,1), border-color .25s, box-shadow .25s;
+  }
+  .dropzone:hover, .dropzone.dragover {
+    transform: translateY(-2px) scale(1.01);
+    border-color: var(--accent);
+    box-shadow: var(--shadow-lg);
+  }
+  .dropzone .dz-icon { font-size: 40px; }
+  .dropzone .dz-title { font-size: 19px; font-weight: 600; margin-top: 14px; }
+  .dropzone .dz-sub { font-size: 14px; color: var(--text-2); margin-top: 6px; }
+  .dropzone input { display: none; }
+
+  /* ---------- loading ---------- */
+  .loading { text-align: center; padding: 110px 0; }
+  .spinner {
+    width: 44px; height: 44px; margin: 0 auto 26px;
+    border: 3px solid var(--hairline); border-top-color: var(--red);
+    border-radius: 50%; animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading .quip { font-size: 19px; font-weight: 500; transition: opacity .4s; }
+  .loading .file { font-size: 14px; color: var(--text-2); margin-top: 8px; }
+
+  /* ---------- results ---------- */
+  .results { padding-top: 56px; display: none; }
+  .verdict {
+    display: flex; gap: 44px; align-items: center; flex-wrap: wrap;
+    background: var(--surface); border-radius: 28px; padding: 44px 48px;
+    box-shadow: var(--shadow); border: 1px solid var(--hairline);
+  }
+  .ring { position: relative; width: 168px; height: 168px; flex: none; }
+  .ring svg { transform: rotate(-90deg); }
+  .ring .track { stroke: var(--surface-2); }
+  .ring .arc {
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1), stroke .4s;
+  }
+  .ring .num {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .ring .num b { font-size: 44px; font-weight: 700; letter-spacing: -0.03em; }
+  .ring .num span { font-size: 12px; color: var(--text-2); text-transform: uppercase; letter-spacing: .12em; }
+  .verdict-text { flex: 1; min-width: 260px; }
+  .verdict-text .doc { font-size: 13px; color: var(--text-2); text-transform: uppercase; letter-spacing: .1em; }
+  .verdict-text blockquote {
+    font-size: clamp(22px, 3.2vw, 30px); font-weight: 600; letter-spacing: -0.02em;
+    line-height: 1.25; margin-top: 10px;
+  }
+  .brand-pill {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 18px;
+    font-size: 13px; font-weight: 500; padding: 7px 14px; border-radius: 999px;
+    background: var(--surface-2);
+  }
+  .brand-pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 22px; margin-top: 22px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--surface); border-radius: 24px; padding: 30px 32px;
+    box-shadow: var(--shadow); border: 1px solid var(--hairline);
+  }
+  .panel h2 { font-size: 13px; color: var(--text-2); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 18px; }
+  .sins li {
+    list-style: none; display: flex; gap: 12px; padding: 10px 0;
+    font-size: 15px; line-height: 1.45; border-bottom: 1px solid var(--hairline);
+  }
+  .sins li:last-child { border-bottom: none; }
+  .sins .x { color: var(--red); font-weight: 700; flex: none; }
+  .section-row { padding: 16px 0; border-bottom: 1px solid var(--hairline); }
+  .section-row:last-child { border-bottom: none; }
+  .section-head { display: flex; align-items: center; gap: 12px; }
+  .section-head .chip {
+    flex: none; font-size: 12px; font-weight: 700; width: 34px; height: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 999px; color: #fff;
+  }
+  .section-head .t { font-size: 15px; font-weight: 600; }
+  .section-row .roast { font-size: 14px; color: var(--text-2); margin-top: 7px; line-height: 1.5; }
+  .section-row .fix { font-size: 14px; margin-top: 5px; line-height: 1.5; }
+  .section-row .fix b { color: var(--accent); font-weight: 600; }
+
+  .summary-panel { margin-top: 22px; }
+  .summary-panel p { font-size: 16px; line-height: 1.6; }
+
+  /* ---------- actions ---------- */
+  .actions { text-align: center; margin-top: 44px; }
+  .btn {
+    appearance: none; border: none; cursor: pointer; font-family: inherit;
+    font-size: 17px; font-weight: 500; border-radius: 999px; padding: 14px 32px;
+    transition: transform .2s cubic-bezier(.2,.8,.2,1), opacity .2s;
+  }
+  .btn:hover { transform: scale(1.03); }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-ghost { background: transparent; color: var(--accent); }
+  .btn[disabled] { opacity: .5; pointer-events: none; }
+  .fix-note { font-size: 13px; color: var(--text-2); margin-top: 12px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(20px);
+    background: var(--surface); color: var(--text); border: 1px solid var(--hairline);
+    box-shadow: var(--shadow-lg); border-radius: 14px; padding: 14px 22px;
+    font-size: 14px; opacity: 0; pointer-events: none; transition: all .35s cubic-bezier(.2,.8,.2,1);
+    max-width: 90vw;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .reveal { animation: rise .6s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="wordmark">den<span>·</span>AI <span style="color:var(--text-2); font-weight:400;">studio</span></div>
+    <div class="header-meta">
+      <span id="model-badge"></span>
+      <a href="https://github.com/Dany-mc/den-AI" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- upload state -->
+  <section id="view-upload" class="hero">
+    <h1>Your deck.<br><em>Judged.</em></h1>
+    <p>Drop a presentation or a report. Get the verdict. Get it fixed.</p>
+    <div class="dropzone" id="dropzone">
+      <div class="dz-icon">📄</div>
+      <div class="dz-title">Drop a .pptx or .docx here</div>
+      <div class="dz-sub">or click to choose a file — judged locally, roasted by Claude</div>
+      <input type="file" id="file-input" accept=".pptx,.docx">
+    </div>
+  </section>
+
+  <!-- loading state -->
+  <section id="view-loading" class="loading" style="display:none">
+    <div class="spinner"></div>
+    <div class="quip" id="quip">Reading every slide…</div>
+    <div class="file" id="loading-file"></div>
+  </section>
+
+  <!-- results state -->
+  <section id="view-results" class="results">
+    <div class="verdict reveal">
+      <div class="ring">
+        <svg width="168" height="168" viewBox="0 0 168 168">
+          <circle class="track" cx="84" cy="84" r="74" fill="none" stroke-width="11"/>
+          <circle class="arc" id="arc" cx="84" cy="84" r="74" fill="none" stroke-width="11"
+                  stroke-dasharray="465" stroke-dashoffset="465"/>
+        </svg>
+        <div class="num"><b id="score">–</b><span>den score</span></div>
+      </div>
+      <div class="verdict-text">
+        <div class="doc" id="doc-name"></div>
+        <blockquote id="one-liner"></blockquote>
+        <div class="brand-pill"><span class="dot" id="brand-dot"></span><span id="brand-comment"></span></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel reveal" style="animation-delay:.08s">
+        <h2>Top sins</h2>
+        <ul class="sins" id="sins"></ul>
+      </div>
+      <div class="panel reveal" style="animation-delay:.16s">
+        <h2 id="sections-title">Section by section</h2>
+        <div id="sections"></div>
+      </div>
+    </div>
+
+    <div class="panel summary-panel reveal" style="animation-delay:.24s">
+      <h2>The verdict</h2>
+      <p id="summary"></p>
+    </div>
+
+    <div class="actions reveal" style="animation-delay:.3s">
+      <button class="btn btn-primary" id="fix-btn">Fix it for me</button>
+      <button class="btn btn-ghost" id="reset-btn">Roast another</button>
+      <div class="fix-note" id="fix-note"></div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const QUIPS = [
+    "Reading every slide…",
+    "Judging your font choices…",
+    "Counting vanity metrics…",
+    "Inspecting the brand. Hmm.",
+    "Sharpening the knives…",
+    "Drafting the verdict…",
+  ];
+  let state = { jobId: null, quipTimer: null };
+
+  fetch("/api/info").then(r => r.json()).then(d => {
+    $("model-badge").textContent = d.model;
+  }).catch(() => {});
+
+  function show(view) {
+    $("view-upload").style.display = view === "upload" ? "" : "none";
+    $("view-loading").style.display = view === "loading" ? "" : "none";
+    $("view-results").style.display = view === "results" ? "block" : "none";
+    window.scrollTo({ top: 0 });
+  }
+
+  function toast(msg) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), 4200);
+  }
+
+  function scoreColor(s) {
+    return s >= 7 ? "var(--green)" : s >= 5 ? "var(--amber)" : "var(--red)";
+  }
+
+  function startQuips(fileName, verb) {
+    $("loading-file").textContent = fileName;
+    let i = 0;
+    $("quip").textContent = verb || QUIPS[0];
+    state.quipTimer = setInterval(() => {
+      i = (i + 1) % QUIPS.length;
+      $("quip").style.opacity = 0;
+      setTimeout(() => { $("quip").textContent = QUIPS[i]; $("quip").style.opacity = 1; }, 350);
+    }, 2600);
+  }
+  function stopQuips() { clearInterval(state.quipTimer); }
+
+  async function roastFile(file) {
+    show("loading");
+    startQuips(file.name);
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/roast", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "den-AI choked on that file.");
+      stopQuips();
+      renderRoast(data);
+    } catch (err) {
+      stopQuips();
+      show("upload");
+      toast("✗ " + err.message);
+    }
+  }
+
+  function renderRoast(data) {
+    state.jobId = data.job_id;
+    const roast = data.roast;
+    const score = Number(roast.den_score || 0);
+    const color = scoreColor(score);
+
+    $("doc-name").textContent = data.name + " · " + data.n_units + (data.kind === "pptx" ? " slides" : " sections");
+    $("one-liner").textContent = "“" + (roast.one_liner || "") + "”";
+    $("score").textContent = score.toFixed(1);
+    $("score").style.color = color;
+
+    const brand = roast.brand_verdict || {};
+    $("brand-dot").style.background = brand.keep ? "var(--green)" : "var(--red)";
+    $("brand-comment").textContent = brand.comment || "";
+
+    $("sins").innerHTML = (roast.top_sins || [])
+      .map(s => `<li><span class="x">✗</span><span>${esc(s)}</span></li>`).join("");
+
+    $("sections-title").textContent = data.kind === "pptx" ? "Slide by slide" : "Section by section";
+    $("sections").innerHTML = (roast.sections || []).map(s => `
+      <div class="section-row">
+        <div class="section-head">
+          <span class="chip" style="background:${scoreColor(Number(s.score))}">${esc(String(s.score))}</span>
+          <span class="t">${esc(String(s.index))}. ${esc(s.title || "")}</span>
+        </div>
+        <div class="roast">${esc(s.roast || "")}</div>
+        <div class="fix"><b>Fix:</b> ${esc(s.fix || "")}</div>
+      </div>`).join("");
+
+    $("summary").textContent = roast.summary || "";
+    $("fix-btn").disabled = false;
+    $("fix-btn").textContent = "Fix it for me";
+    $("fix-btn").onclick = fixIt;
+    $("fix-note").textContent = "";
+
+    show("results");
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const arc = $("arc");
+      arc.style.stroke = color;
+      arc.style.strokeDashoffset = String(465 - (465 * Math.min(score, 10) / 10));
+    }));
+  }
+
+  async function fixIt() {
+    const btn = $("fix-btn");
+    btn.disabled = true;
+    btn.textContent = "Rebuilding…";
+    $("fix-note").textContent = "den-AI is doing it the way it should have been done.";
+    try {
+      const res = await fetch("/api/fix/" + state.jobId, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Rebuild failed.");
+      btn.textContent = "Download the fixed file";
+      btn.disabled = false;
+      btn.onclick = () => { window.location.href = data.download; };
+      $("fix-note").textContent = data.use_original_brand
+        ? "Rebuilt in your brand — it earned the right to stay."
+        : "Rebuilt in den style — your brand didn't make the cut.";
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = "Fix it for me";
+      $("fix-note").textContent = "";
+      toast("✗ " + err.message);
+    }
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[c]));
+  }
+
+  // wiring
+  const dz = $("dropzone");
+  dz.addEventListener("click", () => $("file-input").click());
+  $("file-input").addEventListener("change", (e) => {
+    if (e.target.files.length) roastFile(e.target.files[0]);
+  });
+  ["dragenter", "dragover"].forEach(ev =>
+    dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("dragover"); }));
+  ["dragleave", "drop"].forEach(ev =>
+    dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove("dragover"); }));
+  dz.addEventListener("drop", (e) => {
+    if (e.dataTransfer.files.length) roastFile(e.dataTransfer.files[0]);
+  });
+  $("fix-btn").onclick = fixIt;
+  $("reset-btn").addEventListener("click", () => {
+    state.jobId = null;
+    $("file-input").value = "";
+    $("arc").style.strokeDashoffset = "465";
+    show("upload");
+  });
+
+  // exposed for demos/tests
+  window.__denaiRender = renderRoast;
+</script>
+</body>
+</html>

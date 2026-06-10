@@ -27,6 +27,7 @@ $ denai fix q3-results.pptx
 
 ## What it does
 
+- **`denai web`** — opens **den-AI studio** on localhost: drop a file in the browser, watch the den score ring fill up, read the roast, click *Fix it for me* and download the rebuilt document. Apple-grade UI, dark mode included, nothing leaves your machine except the call to Claude.
 - **`denai roast <file>`** — takes a `.pptx` or `.docx` and delivers a sharp, slide-by-slide (or section-by-section) critique: a **den score** out of 10, the top sins, and a concrete fix for every flaw. Output lands in your terminal, in a Markdown report, and in a **shareable HTML scorecard**.
 - **`denai fix <file>`** — rebuilds the document: cuts filler, merges redundant slides, turns titles into takeaways and walls of text into tight bullets.
 
@@ -60,10 +61,12 @@ den-AI inherits authentication from the Claude Code runtime — pick whichever y
 ## Usage
 
 ```sh
-denai roast deck.pptx              # the verdict
+denai web                          # den-AI studio in your browser (localhost)
+denai roast deck.pptx              # the verdict, in your terminal
 denai roast report.docx --no-card  # skip the HTML scorecard
 denai fix deck.pptx                # the redemption (reuses the roast if present)
 denai roast deck.pptx --model claude-opus-4-8   # bring a bigger brain
+denai web --port 9000 --no-browser # studio, your way
 ```
 
 Outputs, next to your file:
@@ -84,6 +87,7 @@ Outputs, next to your file:
 ## Roadmap
 
 - [x] Roast + rebuild for PPTX and DOCX
+- [x] den-AI studio — local web UI (`denai web`)
 - [ ] PNG export of the scorecard
 - [ ] Charts in rebuilt decks (matplotlib)
 - [ ] `denai roast --diff` — before/after comparison
