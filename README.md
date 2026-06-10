@@ -51,17 +51,19 @@ Requires Python ≥ 3.10 and the [Claude Code](https://claude.com/claude-code) C
 
 > Not on PyPI yet? Install from source: `uv tool install git+https://github.com/Dany-mc/den-AI`
 
-## Authentication
+## Authentication — guided, in the browser
 
-den-AI inherits authentication from the Claude Code runtime — pick whichever you already have:
+You don't need to touch env vars. Run `denai web`: on first launch, den-AI studio opens a **Connect Claude** sheet with two one-click paths:
 
-- **Claude subscription** — if you're logged into Claude Code (`claude` → `/login`), den-AI just works. No per-token billing.
-- **API key** — set `ANTHROPIC_API_KEY` in your environment.
+- **Claude subscription** — if you're logged into Claude Code on this machine (`claude` → `/login`, one time only), hit *Verify connection* and you're in. No per-token billing.
+- **API key** — paste your Anthropic key in the sheet. It's stored only on your machine (`~/.denai/config.json`, `chmod 600`) and used only to call Claude.
+
+Both paths are verified with a real one-token call before the sheet closes. Reopen anytime from the 🔑 icon in the header. Terminal purists can still just set `ANTHROPIC_API_KEY` — it always wins over the stored key, and the CLI commands (`roast`, `fix`) pick up the stored key too.
 
 ## Usage
 
 ```sh
-denai web                          # den-AI studio in your browser (localhost)
+denai web                          # den-AI studio in your browser — login included, first run is guided
 denai roast deck.pptx              # the verdict, in your terminal
 denai roast report.docx --no-card  # skip the HTML scorecard
 denai fix deck.pptx                # the redemption (reuses the roast if present)

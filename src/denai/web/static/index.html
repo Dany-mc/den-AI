@@ -191,6 +191,44 @@
   .btn[disabled] { opacity: .5; pointer-events: none; }
   .fix-note { font-size: 13px; color: var(--text-2); margin-top: 12px; }
 
+  /* ---------- auth sheet ---------- */
+  .sheet-backdrop {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .sheet-backdrop.show { display: flex; }
+  .sheet {
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 28px; max-width: 540px; width: 100%; padding: 38px 42px;
+    box-shadow: var(--shadow-lg); animation: rise .45s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .sheet h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+  .sheet .auth-sub { font-size: 15px; color: var(--text-2); margin-top: 8px; line-height: 1.5; }
+  .auth-card {
+    background: var(--surface-2); border-radius: 18px; padding: 20px 22px; margin-top: 18px;
+  }
+  .auth-card-title { font-size: 15px; font-weight: 600; }
+  .auth-card p { font-size: 13px; color: var(--text-2); margin-top: 5px; line-height: 1.5; }
+  .auth-card .btn { margin-top: 14px; font-size: 14px; padding: 9px 20px; }
+  .btn-secondary { background: var(--surface); color: var(--accent); border: 1px solid var(--hairline) !important; }
+  .key-row { display: flex; gap: 10px; margin-top: 14px; }
+  .key-row input {
+    flex: 1; font-family: ui-monospace, Menlo, monospace; font-size: 13px;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--hairline); border-radius: 999px; padding: 9px 16px; outline: none;
+  }
+  .key-row input:focus { border-color: var(--accent); }
+  .key-row .btn { margin-top: 0; }
+  .auth-note { font-size: 12px; color: var(--text-2); margin-top: 18px; line-height: 1.5; }
+  .auth-status { font-size: 13px; font-weight: 500; margin-top: 12px; min-height: 18px; }
+  .icon-btn {
+    appearance: none; border: none; background: transparent; cursor: pointer;
+    font-size: 14px; color: var(--text-2); padding: 4px;
+  }
+  .icon-btn:hover { color: var(--accent); }
+
   .toast {
     position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(20px);
     background: var(--surface); color: var(--text); border: 1px solid var(--hairline);
@@ -216,6 +254,7 @@
         <button data-lang="es">ES</button>
       </div>
       <span id="model-badge"></span>
+      <button class="icon-btn" id="auth-open" title="Claude connection">🔑</button>
       <a href="https://github.com/Dany-mc/den-AI" target="_blank" rel="noopener">GitHub ↗</a>
     </div>
   </div>
@@ -283,6 +322,28 @@
   </section>
 </main>
 
+<div class="sheet-backdrop" id="auth-sheet">
+  <div class="sheet">
+    <h2 id="auth-title">Connect Claude</h2>
+    <p class="auth-sub" id="auth-sub"></p>
+    <div class="auth-card">
+      <div class="auth-card-title" id="auth-sub-title"></div>
+      <p id="auth-sub-desc"></p>
+      <button class="btn btn-secondary" id="auth-test-btn"></button>
+    </div>
+    <div class="auth-card">
+      <div class="auth-card-title" id="auth-key-title"></div>
+      <p id="auth-key-desc"></p>
+      <div class="key-row">
+        <input id="auth-key-input" type="password" placeholder="sk-ant-…" autocomplete="off">
+        <button class="btn btn-primary" id="auth-key-btn"></button>
+      </div>
+    </div>
+    <div class="auth-status" id="auth-status"></div>
+    <div class="auth-note" id="auth-note"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -310,6 +371,17 @@
       noteKeep: "Rebuilt in your brand — it earned the right to stay.",
       noteDen: "Rebuilt in den style — your brand didn't make the cut.",
       fixLabel: "Fix:",
+      authTitle: "Connect Claude",
+      authSub: "den-AI judges with Claude's brain. Connect it once — pick whichever you already have.",
+      authSubTitle: "I have a Claude subscription",
+      authSubDesc: "Already logged into Claude Code on this machine? (Run “claude” in a terminal, then /login — one time only.) Then just verify.",
+      authTestBtn: "Verify connection",
+      authKeyTitle: "I have an API key",
+      authKeyDesc: "Paste your Anthropic API key. It is saved only on this machine (~/.denai) and used only to call Claude.",
+      authKeyBtn: "Save & verify",
+      authTesting: "Verifying…",
+      authOk: "✓ Connected. den-AI is ready to judge.",
+      authNote: "Nothing leaves your Mac except the calls to Claude. The key never touches any other server.",
     },
     it: {
       heroTitle: "Il tuo deck.<br><em>Giudicato.</em>",
@@ -332,6 +404,17 @@
       noteKeep: "Ricostruito nel tuo brand — si è guadagnato il diritto di restare.",
       noteDen: "Ricostruito in den style — il tuo brand non ha superato il provino.",
       fixLabel: "Fix:",
+      authTitle: "Collega Claude",
+      authSub: "den-AI giudica con il cervello di Claude. Collegalo una volta sola — scegli la strada che hai già.",
+      authSubTitle: "Ho l'abbonamento Claude",
+      authSubDesc: "Hai già fatto il login a Claude Code su questo Mac? (Lancia “claude” nel terminale, poi /login — solo la prima volta.) Poi verifica e basta.",
+      authTestBtn: "Verifica la connessione",
+      authKeyTitle: "Ho una API key",
+      authKeyDesc: "Incolla la tua API key Anthropic. Viene salvata solo su questa macchina (~/.denai) e usata solo per chiamare Claude.",
+      authKeyBtn: "Salva e verifica",
+      authTesting: "Verifico…",
+      authOk: "✓ Collegato. den-AI è pronto a giudicare.",
+      authNote: "Niente lascia il tuo Mac tranne le chiamate a Claude. La key non tocca nessun altro server.",
     },
     es: {
       heroTitle: "Tu deck.<br><em>Juzgado.</em>",
@@ -354,6 +437,17 @@
       noteKeep: "Reconstruido con tu marca — se ganó el derecho a quedarse.",
       noteDen: "Reconstruido en den style — tu marca no pasó el corte.",
       fixLabel: "Fix:",
+      authTitle: "Conecta Claude",
+      authSub: "den-AI juzga con el cerebro de Claude. Conéctalo una sola vez — elige la vía que ya tengas.",
+      authSubTitle: "Tengo suscripción a Claude",
+      authSubDesc: "¿Ya iniciaste sesión en Claude Code en este equipo? (Ejecuta “claude” en la terminal y luego /login — solo la primera vez.) Después, verifica.",
+      authTestBtn: "Verificar conexión",
+      authKeyTitle: "Tengo una API key",
+      authKeyDesc: "Pega tu API key de Anthropic. Se guarda solo en esta máquina (~/.denai) y se usa solo para llamar a Claude.",
+      authKeyBtn: "Guardar y verificar",
+      authTesting: "Verificando…",
+      authOk: "✓ Conectado. den-AI está listo para juzgar.",
+      authNote: "Nada sale de tu equipo salvo las llamadas a Claude. La key no toca ningún otro servidor.",
     },
   };
 
@@ -373,6 +467,15 @@
     $("sins-title").textContent = t("sinsTitle");
     $("summary-title").textContent = t("summaryTitle");
     $("reset-btn").textContent = t("another");
+    $("auth-title").textContent = t("authTitle");
+    $("auth-sub").textContent = t("authSub");
+    $("auth-sub-title").textContent = t("authSubTitle");
+    $("auth-sub-desc").textContent = t("authSubDesc");
+    $("auth-test-btn").textContent = t("authTestBtn");
+    $("auth-key-title").textContent = t("authKeyTitle");
+    $("auth-key-desc").textContent = t("authKeyDesc");
+    $("auth-key-btn").textContent = t("authKeyBtn");
+    $("auth-note").textContent = t("authNote");
     if (state.kind) {
       $("sections-title").textContent = state.kind === "pptx" ? t("bySlide") : t("bySection");
     }
@@ -542,6 +645,55 @@
     $("arc").style.strokeDashoffset = "465";
     show("upload");
   });
+
+  // ---------- auth onboarding ----------
+  function openAuth() {
+    $("auth-status").textContent = "";
+    $("auth-sheet").classList.add("show");
+  }
+  function closeAuth() { $("auth-sheet").classList.remove("show"); }
+
+  $("auth-open").addEventListener("click", openAuth);
+  $("auth-sheet").addEventListener("click", (e) => {
+    if (e.target === $("auth-sheet")) closeAuth();
+  });
+
+  async function authRequest(url, body, btn) {
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = t("authTesting");
+    $("auth-status").textContent = "";
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Connection failed.");
+      $("auth-status").style.color = "var(--green)";
+      $("auth-status").textContent = t("authOk");
+      setTimeout(closeAuth, 1200);
+    } catch (err) {
+      $("auth-status").style.color = "var(--red)";
+      $("auth-status").textContent = "✗ " + err.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+
+  $("auth-test-btn").addEventListener("click", () =>
+    authRequest("/api/auth/test", null, $("auth-test-btn")));
+  $("auth-key-btn").addEventListener("click", () => {
+    const key = $("auth-key-input").value.trim();
+    if (!key) { $("auth-key-input").focus(); return; }
+    authRequest("/api/auth/key", { api_key: key }, $("auth-key-btn"));
+  });
+
+  fetch("/api/auth/status").then(r => r.json()).then(d => {
+    if (!d.configured) openAuth();
+  }).catch(() => {});
 
   // exposed for demos/tests
   window.__denaiRender = renderRoast;

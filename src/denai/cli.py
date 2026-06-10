@@ -31,6 +31,9 @@ def _load_document(file: Path) -> dict:
 @click.version_option(__version__, prog_name="denai")
 def main() -> None:
     """den-AI: roasts your decks and reports, then rebuilds them better."""
+    from denai.auth import apply_stored_key
+
+    apply_stored_key()
 
 
 @main.command()

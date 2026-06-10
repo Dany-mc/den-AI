@@ -11,9 +11,10 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import Body, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 
+from denai import auth
 from denai import __version__
 from denai.agent import DEFAULT_MODEL, fix_document, roast_document
 from denai.extract import extract_document
@@ -35,6 +36,31 @@ def create_app(model: str = DEFAULT_MODEL) -> FastAPI:
     @app.get("/api/info")
     def info() -> dict[str, str]:
         return {"version": __version__, "model": model}
+
+    @app.get("/api/auth/status")
+    def auth_status() -> dict[str, Any]:
+        source = auth.auth_source()
+        return {"configured": source is not None, "source": source}
+
+    @app.post("/api/auth/key")
+    def auth_key(api_key: str = Body(..., embed=True)) -> dict[str, Any]:
+        try:
+            auth.save_api_key(api_key)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        ok, detail = auth.probe(model)
+        if not ok:
+            raise HTTPException(401, detail)
+        return {"configured": True, "source": "stored_key"}
+
+    @app.post("/api/auth/test")
+    def auth_test() -> dict[str, Any]:
+        ok, detail = auth.probe(model)
+        if not ok:
+            raise HTTPException(401, detail)
+        if auth.auth_source() is None:
+            auth.mark_subscription_ok()
+        return {"configured": True, "source": auth.auth_source()}
 
     @app.post("/api/roast")
     def roast(
