@@ -110,18 +110,26 @@ async def _run(prompt: str, system_prompt: str, model: str) -> str:
     error: str | None = None
     # No raise/return/break inside the loop: the SDK's async generator must be
     # allowed to finish on its own (ResultMessage is always the final message).
-    async for message in query(prompt=prompt, options=options):
-        if isinstance(message, AssistantMessage):
-            for block in message.content:
-                if isinstance(block, TextBlock):
-                    chunks.append(block.text)
-        elif isinstance(message, ResultMessage):
-            if message.is_error:
-                error = message.result or message.subtype
-            elif message.result:
-                result = message.result
+    try:
+        async for message in query(prompt=prompt, options=options):
+            if isinstance(message, AssistantMessage):
+                for block in message.content:
+                    if isinstance(block, TextBlock):
+                        chunks.append(block.text)
+            elif isinstance(message, ResultMessage):
+                if message.is_error:
+                    error = message.result or message.subtype
+                elif message.result:
+                    result = message.result
+    except Exception as exc:
+        # When the CLI exits non-zero the SDK raises with an opaque label
+        # (e.g. "error result: success"); the human-readable cause is in the
+        # error ResultMessage we already captured — prefer that.
+        if error is not None:
+            raise RuntimeError(error) from exc
+        raise
     if error is not None:
-        raise RuntimeError(f"den-AI could not reach Claude: {error}")
+        raise RuntimeError(error)
     return result if result is not None else "".join(chunks)
 
 

@@ -79,10 +79,27 @@ def auth_source() -> str | None:
 
 def probe(model: str) -> tuple[bool, str]:
     """Make one tiny real call to Claude to verify credentials end-to-end."""
+    import shutil
+
     from denai.agent import run_agent
 
+    if shutil.which("claude") is None:
+        return False, (
+            "Claude Code CLI not found on this machine — den-AI talks to Claude "
+            "through it. Install it from claude.com/claude-code "
+            "(npm install -g @anthropic-ai/claude-code), then retry."
+        )
     try:
         run_agent("Reply with exactly: OK", "You reply with exactly: OK", model)
         return True, "ok"
     except Exception as exc:
-        return False, str(exc)
+        detail = str(exc)
+        lowered = detail.lower()
+        if "not logged in" in lowered or "/login" in lowered:
+            detail += (
+                " → Open a terminal, run `claude`, type /login and pick your "
+                "Claude account — or paste an API key below instead."
+            )
+        elif "invalid" in lowered and "key" in lowered:
+            detail += " → Check the key on console.anthropic.com, or use the subscription login."
+        return False, detail
