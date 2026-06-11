@@ -1,9 +1,9 @@
 # den-AI
 
 > **The critic that fixes your documents.**
-> den-AI roasts your slide decks and reports without mercy — then rebuilds them better.
+> den-AI roasts your slide decks and reports without mercy — then edits them like a senior reviewer. Your design stays. Your filler doesn't.
 
-Every office has that one colleague with brutal taste who tells you your deck is unreadable, your chart is misleading, and slide 7 should never have existed. den-AI is that colleague, as a CLI agent. The difference: after the roast, it actually fixes the thing.
+Every office has that one colleague with brutal taste who tells you your deck is unreadable, your chart is misleading, and slide 7 should never have existed. den-AI is that colleague, as an agent. The difference: after the roast, it actually fixes the thing — **surgically, on your file**, not by regenerating some template-grey replacement. Titles become takeaways, walls of text become bullets, filler slides disappear, and you get the changelog of every cut.
 
 ```
 $ denai roast q3-results.pptx
@@ -29,15 +29,15 @@ $ denai fix q3-results.pptx
 
 - **`denai web`** — opens **den-AI studio** on localhost: drop a file in the browser, watch the den score ring fill up, read the roast, click *Fix it for me* and download the rebuilt document. Apple-grade UI, dark mode included, **IT · EN · ES** language switcher (changes both the interface and the roast language), nothing leaves your machine except the call to Claude.
 - **`denai roast <file>`** — takes a `.pptx`, `.docx`, `.pdf` or `.md` and delivers a sharp, slide-by-slide (or section-by-section) critique: a **den score** out of 10, the top sins, and a concrete fix for every flaw. Output lands in your terminal, in a Markdown report, and in a **shareable scorecard** (HTML + PNG).
-- **`denai fix <file>`** — rebuilds the document: cuts filler, merges redundant slides, turns titles into takeaways and walls of text into tight bullets — **with real charts** (matplotlib) wherever the source has numbers worth seeing. PDF and Markdown inputs rebuild as Word documents.
+- **`denai fix <file>`** — **edits the original in place**: your theme, layouts and images stay exactly where they are. den-AI rewrites weak titles into takeaways, replaces walls of text with tight bullets, adds speaker notes, deletes true filler — and prints the changelog of every intervention. PDF and Markdown inputs (no design to preserve) are rebuilt as clean Word documents, **with real charts** (matplotlib) wherever the source has numbers worth seeing.
 - **`denai roast --diff <file>`** — den-AI re-judges its own fix: before/after den score, delta, and a verdict on whether redemption was achieved.
 - **`denai report <data.csv>`** — from raw numbers straight to a den-approved report (`--to docx|pptx`): headline number first, real insights, charts instead of tables, zero filler.
 
 Every jab points at a real flaw and how to fix it — sharp, never gratuitous. And den-AI is bilingual: it roasts in the language of your document.
 
-### The brand rule
+### The prime directive
 
-den-AI extracts your document's brand signals (dominant colors, fonts) and **respects them in the rebuild** — *if* they deserve it. If your palette is part of the problem, den-AI says so in the roast and rebuilds in its own signature **den style** instead. You get judged twice: content and identity.
+**Never destroy the user's design.** den-AI fixes documents the way a great editor fixes prose: changing what's weak, touching nothing else. It judges your brand in the roast (palette, fonts, coherence — nothing is safe), but the fix operates on *your* file. The only documents it builds from scratch are the ones that have no design yet: PDFs, Markdown, and raw CSV data — those get den-AI's clean, chart-forward treatment.
 
 ## Install
 
@@ -90,9 +90,9 @@ Outputs, next to your file:
 
 ## How it works
 
-1. **Extract** — `python-pptx` / `python-docx` turn your file into structured content + distilled brand signals (dominant palette, fonts).
+1. **Extract** — `python-pptx` / `python-docx` / `pypdf` turn your file into structured content + distilled brand signals (dominant palette, fonts).
 2. **Judge** — Claude, wearing the den-AI persona, scores every unit and the brand itself.
-3. **Rebuild** — the fix spec (tight titles, bullets, narrative order) is rendered back to a real `.pptx`/`.docx`, in your brand or in den style.
+3. **Operate** — Claude produces a surgical edit plan (rewrite this title, replace that body, delete slide 7); den-AI applies it to a copy of your original file and hands you the changelog. For design-less inputs (PDF/MD/CSV), it builds a clean document with charts instead.
 
 ## Roadmap
 

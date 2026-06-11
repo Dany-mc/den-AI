@@ -21,13 +21,9 @@ MOCK_ROAST = {
     "summary": "Cut it down.",
 }
 
-MOCK_SPEC = {
-    "kind": "pptx",
-    "use_original_brand": False,
-    "slides": [
-        {"layout": "title", "title": "Q3: up 12%", "bullets": [], "notes": ""},
-        {"layout": "content", "title": "Two drivers", "bullets": ["Acme", "Globex"], "notes": ""},
-    ],
+MOCK_PLAN = {
+    "edits": [{"op": "rewrite_title", "unit": 1, "text": "Q3: up 12%"}],
+    "changelog": ["Rewrote the title into a takeaway"],
 }
 
 
@@ -46,7 +42,7 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     monkeypatch.setattr(
         server, "roast_document", lambda extraction, model, language=None: MOCK_ROAST
     )
-    monkeypatch.setattr(server, "fix_document", lambda extraction, roast, model: MOCK_SPEC)
+    monkeypatch.setattr(server, "plan_edits", lambda extraction, roast, model: MOCK_PLAN)
     return TestClient(create_app())
 
 
@@ -68,7 +64,8 @@ def test_roast_fix_download_flow(client: TestClient, sample_pptx: Path) -> None:
 
     res = client.post(f"/api/fix/{job_id}")
     assert res.status_code == 200
-    assert res.json()["use_original_brand"] is False
+    assert res.json()["mode"] == "edited"
+    assert res.json()["changelog"] == ["Rewrote the title into a takeaway"]
 
     res = client.get(f"/api/download/{job_id}")
     assert res.status_code == 200

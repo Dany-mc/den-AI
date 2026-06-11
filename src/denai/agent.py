@@ -109,6 +109,35 @@ For kind "docx" (ALSO the output for pdf and md inputs — they rebuild as docx)
     + _CHART_SCHEMA
 )
 
+EDIT_SYSTEM = """\
+You are den-AI, a surgical document editor. You receive the extracted content
+of a PPTX or DOCX plus a roast report listing its flaws. Fix the document by
+EDITING it — the user's design, theme, layout and images stay untouched. You
+only operate on text and on whole filler units.
+
+Allowed operations (unit numbers are the extraction indexes):
+  {"op": "rewrite_title", "unit": N, "text": "<assertive takeaway title>"}
+  {"op": "replace_body", "unit": N, "bullets": ["<max 5 bullets, max 12 words each>"]}
+  {"op": "set_notes", "unit": N, "text": "<speaker notes>"}        (pptx only)
+  {"op": "delete_unit", "unit": N}
+
+Rules:
+- Prefer rewriting over deleting. Delete only true filler (thank-you slides,
+  redundant dividers, sections that say nothing). Never delete more than one
+  third of the units, and never the only unit.
+- Keep all factual content somewhere: if you delete a unit with substance,
+  move that substance into another unit's body first.
+- replace_body only where the body is genuinely weak (walls of text, vague
+  bullets) — don't churn text that already works.
+- Keep the document's original language.
+
+Output STRICTLY a single JSON object, no markdown fences, no prose around it:
+{
+  "edits": [<operations>],
+  "changelog": ["<one short human line per edit, in the roast's language>"]
+}
+"""
+
 REPORT_SYSTEM = (
     """\
 You are den-AI, an opinionated report builder. You receive raw tabular data
@@ -225,6 +254,18 @@ def fix_document(
         + json.dumps(roast, ensure_ascii=False, indent=2)
     )
     return parse_json_response(run_agent(prompt, FIX_SYSTEM, model))
+
+
+def plan_edits(
+    extraction: dict[str, Any], roast: dict[str, Any], model: str = DEFAULT_MODEL
+) -> dict[str, Any]:
+    prompt = (
+        "Edit this document surgically.\n\nExtracted content:\n"
+        + json.dumps(extraction, ensure_ascii=False, indent=2)
+        + "\n\nRoast report (the flaws to fix):\n"
+        + json.dumps(roast, ensure_ascii=False, indent=2)
+    )
+    return parse_json_response(run_agent(prompt, EDIT_SYSTEM, model))
 
 
 def build_report(

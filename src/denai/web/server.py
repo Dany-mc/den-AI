@@ -16,8 +16,9 @@ from fastapi.responses import FileResponse, HTMLResponse
 
 from denai import auth
 from denai import __version__
-from denai.agent import DEFAULT_MODEL, fix_document, roast_document
+from denai.agent import DEFAULT_MODEL, fix_document, plan_edits, roast_document
 from denai.card_png import write_card_png
+from denai.editor import apply_edits
 from denai.extract import extract_document
 from denai.rebuild import fixed_suffix, rebuild_document
 
@@ -84,7 +85,12 @@ def create_app(model: str = DEFAULT_MODEL) -> FastAPI:
         except Exception as exc:  # surfaced to the UI as-is
             raise HTTPException(502, f"{exc}") from exc
 
-        jobs[job_id] = {"name": name, "extraction": extraction, "roast": roast_result}
+        jobs[job_id] = {
+            "name": name,
+            "src": src,
+            "extraction": extraction,
+            "roast": roast_result,
+        }
         return {
             "job_id": job_id,
             "name": name,
@@ -99,18 +105,28 @@ def create_app(model: str = DEFAULT_MODEL) -> FastAPI:
         if job is None:
             raise HTTPException(404, "Unknown job — roast the file first.")
 
+        kind = job["extraction"]["kind"]
+        suffix = fixed_suffix(Path(job["name"]).suffix.lower())
+        fixed = workdir / f"{job_id}-fixed{suffix}"
+        changelog: list[str] = []
         try:
-            spec = fix_document(job["extraction"], job["roast"], model=model)
-            suffix = fixed_suffix(Path(job["name"]).suffix.lower())
-            fixed = workdir / f"{job_id}-fixed{suffix}"
-            rebuild_document(spec, job["extraction"], fixed)
+            if kind in ("pptx", "docx"):
+                plan = plan_edits(job["extraction"], job["roast"], model=model)
+                apply_edits(plan.get("edits", []), job["src"], fixed, kind)
+                changelog = [str(line) for line in plan.get("changelog", [])]
+                mode = "edited"
+            else:
+                spec = fix_document(job["extraction"], job["roast"], model=model)
+                rebuild_document(spec, job["extraction"], fixed)
+                mode = "rebuilt"
         except Exception as exc:
             raise HTTPException(502, f"{exc}") from exc
 
         job["fixed"] = fixed
         return {
             "job_id": job_id,
-            "use_original_brand": bool(spec.get("use_original_brand")),
+            "mode": mode,
+            "changelog": changelog,
             "download": f"/api/download/{job_id}",
         }
 

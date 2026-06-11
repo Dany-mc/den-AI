@@ -10,9 +10,16 @@ import click
 from rich.console import Console
 
 from denai import __version__
-from denai.agent import DEFAULT_MODEL, build_report, fix_document, roast_document
+from denai.agent import (
+    DEFAULT_MODEL,
+    build_report,
+    fix_document,
+    plan_edits,
+    roast_document,
+)
 from denai.card import write_card
 from denai.card_png import write_card_png
+from denai.editor import apply_edits
 from denai.extract import extract_csv, extract_document
 from denai.rebuild import fixed_suffix, rebuild_document
 from denai.report import render_terminal, write_markdown
@@ -159,15 +166,26 @@ def fix(file: Path, model: str) -> None:
             json.dumps(roast_result, ensure_ascii=False, indent=2), encoding="utf-8"
         )
 
-    console.print("[dim]Rebuilding…[/dim]")
-    spec = fix_document(extraction, roast_result, model=model)
     out_path = file.with_name(f"{file.stem}.denai-fixed{fixed_suffix(file.suffix.lower())}")
-    rebuild_document(spec, extraction, out_path)
+    kind = extraction["kind"]
 
-    brand_note = (
-        "kept your brand" if spec.get("use_original_brand") else "applied den style (your brand didn't make the cut)"
-    )
-    console.print(f"\n[green]✓[/green] Rebuilt: [bold]{out_path}[/bold] — {brand_note}.")
+    if kind in ("pptx", "docx"):
+        # Surgical mode: edit the original in place — design untouched.
+        console.print("[dim]Operating… your design stays on the table.[/dim]")
+        plan = plan_edits(extraction, roast_result, model=model)
+        applied = apply_edits(plan.get("edits", []), file, out_path, kind)
+        console.print(
+            f"\n[green]✓[/green] Edited: [bold]{out_path}[/bold] — "
+            f"{applied} surgical edits, your design untouched."
+        )
+        for line in plan.get("changelog", []):
+            console.print(f"  [green]·[/green] {line}")
+    else:
+        # No design to preserve (pdf/md): rebuild as a clean document.
+        console.print("[dim]Rebuilding…[/dim]")
+        spec = fix_document(extraction, roast_result, model=model)
+        rebuild_document(spec, extraction, out_path)
+        console.print(f"\n[green]✓[/green] Rebuilt: [bold]{out_path}[/bold].")
 
 
 @main.command()
